@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - CampusQuiz Live Test{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Anti-Cheat Warning Banner (Hidden by default, shown on tab switch) -->
+    <div id="antiCheatAlert" class="hidden bg-rose-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-bounce">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+            <div>
+                <p class="font-bold text-sm">Anti-Cheat Alert: Tab Switch Detected!</p>
+                <p class="text-xs text-rose-100">Please do not navigate away from this exam tab. Your tab switches are recorded in the database.</p>
+            </div>
+        </div>
+        <button onclick="document.getElementById('antiCheatAlert').classList.add('hidden')" class="bg-rose-700 hover:bg-rose-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+            I Understand
+        </button>
+    </div>
+
+    <!-- Exam Top Sticky Control Bar -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-20 z-40 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+                {{ quiz.category }}
+            </span>
+            <h1 class="text-lg font-bold text-slate-800 mt-1">{{ quiz.title }}</h1>
+        </div>
+
+        <!-- Timer & Warning Counter -->
+        <div class="flex items-center space-x-4">
+            <!-- Tab switches badge -->
+            <div class="flex items-center space-x-2 bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium">
+                <i class="fa-solid fa-eye text-amber-600"></i>
+                <span>Tab Switches: <strong id="tabSwitchDisplay" class="font-bold text-amber-900">0</strong></span>
+            </div>
+
+            <!-- Countdown Timer -->
+            <div class="flex items-center space-x-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-mono shadow-sm">
+                <i class="fa-regular fa-clock text-brand-400"></i>
+                <span>Time Left:</span>
+                <span id="timerDisplay" class="font-bold text-amber-400 text-base">--:--</span>
+            </div>
+
+            <button type="button" onclick="confirmSubmit()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Submit Quiz</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quiz Form -->
+    <form id="quizForm" method="POST" action="{{ url_for('submit_quiz', quiz_id=quiz.id) }}" class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Hidden Inputs for metadata -->
+        <input type="hidden" name="time_spent" id="time_spent" value="0">
+        <input type="hidden" name="tab_switches" id="tab_switches" value="0">
+
+        <!-- Questions List (Left 3 Columns) -->
+        <div class="lg:col-span-3 space-y-6">
+            {% for q in questions %}
+            <div id="q_card_{{ loop.index }}" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Question {{ loop.index }} of {{ total_q }}
+                    </span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                        1 Mark
+                    </span>
+                </div>
+
+                <h3 class="text-base font-semibold text-slate-800 leading-snug">
+                    {{ q.question_text }}
+                </h3>
+
+                <!-- 4 Options -->
+                <div class="space-y-2.5 pt-1">
+                    <label class="option-label flex items-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition">
+                        <input type="radio" name="q_{{ q.id }}" value="A" onchange="markAnswered({{ loop.index }})" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                        <span class="ml-3 text-sm font-medium text-slate-700"><strong class="font-bold mr-1">A.</strong> {{ q.option_a }}</span>
+                    </label>
+
+                    <label class="option-label flex items-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition">
+                        <input type="radio" name="q_{{ q.id }}" value="B" onchange="markAnswered({{ loop.index }})" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                        <span class="ml-3 text-sm font-medium text-slate-700"><strong class="font-bold mr-1">B.</strong> {{ q.option_b }}</span>
+                    </label>
+
+                    <label class="option-label flex items-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition">
+                        <input type="radio" name="q_{{ q.id }}" value="C" onchange="markAnswered({{ loop.index }})" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                        <span class="ml-3 text-sm font-medium text-slate-700"><strong class="font-bold mr-1">C.</strong> {{ q.option_c }}</span>
+                    </label>
+
+                    <label class="option-label flex items-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition">
+                        <input type="radio" name="q_{{ q.id }}" value="D" onchange="markAnswered({{ loop.index }})" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                        <span class="ml-3 text-sm font-medium text-slate-700"><strong class="font-bold mr-1">D.</strong> {{ q.option_d }}</span>
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Question Palette / Sidebar (Right 1 Column) -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sticky top-48 space-y-4">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                    <span>Question Palette</span>
+                    <span id="answeredCount" class="text-brand-600 font-bold">0 / {{ total_q }}</span>
+                </h4>
+
+                <!-- Palette buttons -->
+                <div class="grid grid-cols-5 gap-2">
+                    {% for q in questions %}
+                    <a href="#q_card_{{ loop.index }}" id="palette_btn_{{ loop.index }}" 
+                       class="w-full aspect-square flex items-center justify-center rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:border-brand-500 transition">
+                        {{ loop.index }}
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <!-- Legend -->
+                <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500 space-y-1.5">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded bg-emerald-500"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded border border-slate-300 bg-white"></div>
+                        <span>Not Answered</span>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" onclick="confirmSubmit()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/20 transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Finish & Submit</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div id="submitModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+        <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-circle-question"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800">Ready to Submit?</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+            Your answers will be graded immediately, and your scorecard will be recorded into the college database.
+        </p>
+        <div class="flex space-x-3 pt-2">
+            <button onclick="document.getElementById('submitModal').classList.add('hidden')" type="button" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">
+                Review Answers
+            </button>
+            <button onclick="document.getElementById('quizForm').submit()" type="button" class="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                Confirm Submit
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Total Duration in seconds
+    const durationMinutes = {{ quiz.duration_minutes }};
+    let timeRemaining = durationMinutes * 60;
+    let timeSpentSeconds = 0;
+    let tabSwitchCount = 0;
+    const totalQuestions = {{ total_q }};
+    const answeredSet = new Set();
+
+    // Timer logic
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timeSpentInput = document.getElementById('time_spent');
+    const tabSwitchInput = document.getElementById('tab_switches');
+    const tabSwitchDisplay = document.getElementById('tabSwitchDisplay');
+
+    const timerInterval = setInterval(() => {
+        timeRemaining--;
+        timeSpentSeconds++;
+        timeSpentInput.value = timeSpentSeconds;
+
+        let minutes = Math.floor(timeRemaining / 60);
+        let seconds = timeRemaining % 60;
+        timerDisplay.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+        // Change color when under 1 minute
+        if (timeRemaining <= 60) {
+            timerDisplay.classList.add('text-rose-500', 'animate-pulse');
+        }
+
+        // Auto submit when time runs out
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            alert("Time is up! Your quiz is being auto-submitted.");
+            document.getElementById('quizForm').submit();
+        }
+    }, 1000);
+
+    // Anti-Cheat: Detect Tab Switching
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            tabSwitchCount++;
+            tabSwitchInput.value = tabSwitchCount;
+            tabSwitchDisplay.textContent = tabSwitchCount;
+            document.getElementById('antiCheatAlert').classList.remove('hidden');
+        }
+    });
+
+    // Mark answered in Question Palette
+    function markAnswered(qNum) {
+        answeredSet.add(qNum);
+        document.getElementById('answeredCount').textContent = `${answeredSet.size} / ${totalQuestions}`;
+        const paletteBtn = document.getElementById(`palette_btn_${qNum}`);
+        paletteBtn.classList.remove('border-slate-200', 'text-slate-600');
+        paletteBtn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
+    }
+
+    function confirmSubmit() {
+        document.getElementById('submitModal').classList.remove('hidden');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CampusQuiz Portal{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- Welcome Hero Section -->
+    <div class="bg-gradient-to-r from-brand-700 via-indigo-600 to-indigo-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+            <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-medium tracking-wide mb-4">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Active Semester Assessments</span>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tight">Welcome, {{ session.get('full_name') }}!</h1>
+            <p class="mt-2 text-indigo-100 text-sm leading-relaxed">
+                Take timed quizzes, test your conceptual knowledge, and climb the college leaderboard. Your responses and scores are automatically saved.
+            </p>
+        </div>
+        <!-- Decorative background shapes -->
+        <div class="absolute -right-8 -bottom-12 w-64 h-64 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
+        <div class="absolute right-20 top-6 text-white/10 text-8xl pointer-events-none">
+            <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+    </div>
+
+    <!-- Student Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quizzes Taken</p>
+                <p class="text-2xl font-bold text-slate-800">{{ total_quizzes_taken }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Average Score</p>
+                <p class="text-2xl font-bold text-slate-800">{{ avg_score }}%</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-medal"></i>
+            </div>
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Best Score</p>
+                <p class="text-2xl font-bold text-slate-800">{{ best_score }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Quizzes Section -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center space-x-2">
+                <i class="fa-solid fa-book-open text-brand-600"></i>
+                <span>Available Quizzes</span>
+            </h2>
+            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                {{ quizzes|length }} Tests Active
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for q in quizzes %}
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg 
+                            {% if q.category == 'Python' %}bg-amber-100 text-amber-800
+                            {% elif q.category == 'Web Development' %}bg-cyan-100 text-cyan-800
+                            {% elif q.category == 'Aptitude' %}bg-purple-100 text-purple-800
+                            {% else %}bg-indigo-100 text-indigo-800{% endif %}">
+                            {{ q.category }}
+                        </span>
+                        <span class="text-xs text-slate-400 flex items-center">
+                            <i class="fa-regular fa-clock mr-1"></i> {{ q.duration_minutes }} Mins
+                        </span>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-brand-600 transition">{{ q.title }}</h3>
+                    <p class="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                        {{ q.description or 'Test your core concepts and evaluate performance.' }}
+                    </p>
+                </div>
+
+                <div class="px-6 py-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500">
+                        <i class="fa-regular fa-circle-question mr-1"></i> {{ q.question_count }} Questions
+                    </span>
+                    <a href="{{ url_for('start_quiz', quiz_id=q.id) }}" 
+                       class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center space-x-1.5">
+                        <span>Start Test</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- My Past Attempts & Review Section -->
+    <div class="space-y-4">
+        <h2 class="text-xl font-bold text-slate-800 flex items-center space-x-2">
+            <i class="fa-solid fa-clock-rotate-left text-brand-600"></i>
+            <span>My Recent Attempts & Scorecards</span>
+        </h2>
+
+        {% if my_attempts %}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] font-semibold tracking-wider">
+                        <tr>
+                            <th class="py-3.5 px-6">Quiz Title</th>
+                            <th class="py-3.5 px-6">Subject</th>
+                            <th class="py-3.5 px-6">Score</th>
+                            <th class="py-3.5 px-6">Percentage</th>
+                            <th class="py-3.5 px-6">Time Taken</th>
+                            <th class="py-3.5 px-6">Date</th>
+                            <th class="py-3.5 px-6 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for att in my_attempts %}
+                        <tr class="hover:bg-slate-50/60 transition">
+                            <td class="py-4 px-6 font-semibold text-slate-800">{{ att.quiz_title }}</td>
+                            <td class="py-4 px-6">
+                                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                    {{ att.category }}
+                                </span>
+                            </td>
+                            <td class="py-4 px-6 font-medium text-slate-700">
+                                {{ att.score }} / {{ att.total_questions }}
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-lg 
+                                    {% if att.percentage >= 70 %}bg-emerald-100 text-emerald-800
+                                    {% elif att.percentage >= 40 %}bg-amber-100 text-amber-800
+                                    {% else %}bg-rose-100 text-rose-800{% endif %}">
+                                    {{ att.percentage }}%
+                                </span>
+                            </td>
+                            <td class="py-4 px-6 text-xs text-slate-500">
+                                {{ att.time_spent_seconds // 60 }}m {{ att.time_spent_seconds % 60 }}s
+                            </td>
+                            <td class="py-4 px-6 text-xs text-slate-400">
+                                {{ att.completed_at }}
+                            </td>
+                            <td class="py-4 px-6 text-right">
+                                <a href="{{ url_for('view_result', attempt_id=att.id) }}" 
+                                   class="text-xs font-semibold text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1">
+                                    <span>View Review</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-400">
+            <i class="fa-solid fa-clipboard-list text-3xl mb-2 text-slate-300"></i>
+            <p class="text-sm font-medium">You haven't attempted any quizzes yet.</p>
+            <p class="text-xs mt-1">Pick a quiz from the list above to get started!</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
